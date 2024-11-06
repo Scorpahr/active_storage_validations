@@ -14,7 +14,7 @@ module ActiveStorageValidations
     include Optionable
     include Symbolizable
 
-    AVAILABLE_CHECKS = %i[with].freeze
+    AVAILABLE_CHECKS = %i[with in].freeze
     NAMED_ASPECT_RATIOS = %i[square portrait landscape].freeze
     ASPECT_RATIO_REGEX = /is_([1-9]\d*)_([1-9]\d*)/.freeze
     ERROR_TYPES = %i[
@@ -44,7 +44,7 @@ module ActiveStorageValidations
 
       return if image_metadata_missing?(record, attribute, attachable, flat_options, metadata)
 
-      case flat_options[:with]
+      case flat_options[:with] || flat_options[:in]
       when :square then validate_square_aspect_ratio(record, attribute, attachable, flat_options, metadata)
       when :portrait then validate_portrait_aspect_ratio(record, attribute, attachable, flat_options, metadata)
       when :landscape then validate_landscape_aspect_ratio(record, attribute, attachable, flat_options, metadata)
@@ -56,7 +56,7 @@ module ActiveStorageValidations
       return false if metadata[:width].to_i > 0 && metadata[:height].to_i > 0
 
       errors_options = initialize_error_options(options, attachable)
-      errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :image_metadata_missing, **errors_options)
       true
     end
@@ -65,7 +65,7 @@ module ActiveStorageValidations
       return if metadata[:width] == metadata[:height]
 
       errors_options = initialize_error_options(options, attachable)
-      errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :aspect_ratio_not_square, **errors_options)
     end
 
@@ -73,7 +73,7 @@ module ActiveStorageValidations
       return if metadata[:width] < metadata[:height]
 
       errors_options = initialize_error_options(options, attachable)
-      errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :aspect_ratio_not_portrait, **errors_options)
     end
 
@@ -81,12 +81,12 @@ module ActiveStorageValidations
       return if metadata[:width] > metadata[:height]
 
       errors_options = initialize_error_options(options, attachable)
-      errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :aspect_ratio_not_landscape, **errors_options)
     end
 
     def validate_regex_aspect_ratio(record, attribute, attachable, flat_options, metadata)
-      flat_options[:with] =~ ASPECT_RATIO_REGEX
+      flat_options[:with] =~ ASPECT_RATIO_REGEX || flat_options[:in] =~ ASPECT_RATIO_REGEX
       x = $1.to_i
       y = $2.to_i
 
@@ -99,14 +99,14 @@ module ActiveStorageValidations
 
     def ensure_at_least_one_validator_option
       unless AVAILABLE_CHECKS.any? { |argument| options.key?(argument) }
-        raise ArgumentError, 'You must pass :with to the validator'
+        raise ArgumentError, 'You must pass :with or :in to the validator'
       end
     end
 
     def ensure_aspect_ratio_validity
-      return true if options[:with]&.is_a?(Proc)
+      return true if options[:with]&.is_a?(Proc) || options[:in]&.is_a?(Proc)
 
-      unless NAMED_ASPECT_RATIOS.include?(options[:with]) || options[:with] =~ ASPECT_RATIO_REGEX
+      unless NAMED_ASPECT_RATIOS.include?(options[:with]) || options[:with] || NAMED_ASPECT_RATIOS.include?(options[:in]) || options[:in] =~ ASPECT_RATIO_REGEX
         raise ArgumentError, <<~ERROR_MESSAGE
           You must pass a valid aspect ratio to the validator
           It should either be a named aspect ratio (#{NAMED_ASPECT_RATIOS.join(', ')})
