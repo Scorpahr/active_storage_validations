@@ -44,11 +44,22 @@ module ActiveStorageValidations
 
       return if image_metadata_missing?(record, attribute, attachable, flat_options, metadata)
 
-      case flat_options[:with] || flat_options[:in]
-      when :square then validate_square_aspect_ratio(record, attribute, attachable, flat_options, metadata)
-      when :portrait then validate_portrait_aspect_ratio(record, attribute, attachable, flat_options, metadata)
-      when :landscape then validate_landscape_aspect_ratio(record, attribute, attachable, flat_options, metadata)
-      when ASPECT_RATIO_REGEX then validate_regex_aspect_ratio(record, attribute, attachable, flat_options, metadata)
+      if flat_options[:in].nil?
+        case flat_options[:with]
+        when :square then validate_square_aspect_ratio(record, attribute, attachable, flat_options, metadata)
+        when :portrait then validate_portrait_aspect_ratio(record, attribute, attachable, flat_options, metadata)
+        when :landscape then validate_landscape_aspect_ratio(record, attribute, attachable, flat_options, metadata)
+        when ASPECT_RATIO_REGEX then validate_regex_aspect_ratio(record, attribute, attachable, flat_options, metadata)
+        end
+      else
+        flat_options[:in].each do |option|
+          case option
+          when :square then validate_square_aspect_ratio(record, attribute, attachable, option, metadata)
+          when :portrait then validate_portrait_aspect_ratio(record, attribute, attachable, option, metadata)
+          when :landscape then validate_landscape_aspect_ratio(record, attribute, attachable, option, metadata)
+          when ASPECT_RATIO_REGEX then validate_regex_aspect_ratio(record, attribute, attachable, option, metadata)
+          end
+        end
       end
     end
 
@@ -56,7 +67,7 @@ module ActiveStorageValidations
       return false if metadata[:width].to_i > 0 && metadata[:height].to_i > 0
 
       errors_options = initialize_error_options(options, attachable)
-      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :image_metadata_missing, **errors_options)
       true
     end
@@ -65,7 +76,7 @@ module ActiveStorageValidations
       return if metadata[:width] == metadata[:height]
 
       errors_options = initialize_error_options(options, attachable)
-      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :aspect_ratio_not_square, **errors_options)
     end
 
@@ -73,7 +84,7 @@ module ActiveStorageValidations
       return if metadata[:width] < metadata[:height]
 
       errors_options = initialize_error_options(options, attachable)
-      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :aspect_ratio_not_portrait, **errors_options)
     end
 
@@ -81,12 +92,12 @@ module ActiveStorageValidations
       return if metadata[:width] > metadata[:height]
 
       errors_options = initialize_error_options(options, attachable)
-      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options[:in] : errors_options[:aspect_ratio] = flat_options[:with]
+      flat_options[:with].nil? ? errors_options[:aspect_ratio] = flat_options : errors_options[:aspect_ratio] = flat_options[:with]
       add_error(record, attribute, :aspect_ratio_not_landscape, **errors_options)
     end
 
     def validate_regex_aspect_ratio(record, attribute, attachable, flat_options, metadata)
-      flat_options[:with] =~ ASPECT_RATIO_REGEX || flat_options[:in] =~ ASPECT_RATIO_REGEX
+      flat_options[:with] =~ ASPECT_RATIO_REGEX || flat_options =~ ASPECT_RATIO_REGEX
       x = $1.to_i
       y = $2.to_i
 
