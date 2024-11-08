@@ -87,25 +87,8 @@ describe ActiveStorageValidations::Matchers::AspectRatioValidatorMatcher do
             end
           end
         end
-
-
-        describe 'several' do
-          let(:model_attribute) { :allowing_several }
-          let(:allowed_aspect_ratio) { %i[square portrait] }
-
-          describe 'when provided with the exact allowed aspect_ratio' do
-            subject { matcher.allowing(*allowed_aspect_ratio) }
-
-            it { is_expected_to_match_for(klass) }
-          end
-
-          describe 'when provided with only allowed aspect_ratio but not all aspect_ratio' do
-            subject { matcher.allowing(allowed_aspect_ratio.sample) }
-
-            it { is_expected_to_match_for(klass) }
-          end
-        end
       end
+
 
       describe "'is_x_y' aspect ratio" do
         let(:model_attribute) { :allowing_one_is_x_y }
@@ -126,6 +109,31 @@ describe ActiveStorageValidations::Matchers::AspectRatioValidatorMatcher do
           it { is_expected_not_to_match_for(klass) }
         end
       end
+    end
+  end
+
+  describe 'several' do
+    let(:model_attribute) { :allowing_several }
+    let(:allowed_aspect_ratio) { [:square, :portrait] }
+
+    describe 'when provided with the exact allowed aspect_ratio' do
+      subject { matcher.allowing(*allowed_aspect_ratio) }
+
+      it { is_expected_to_match_for(klass) }
+    end
+
+    describe 'when provided with only allowed aspect_ratio but not all aspect_ratio' do
+      subject { matcher.allowing(allowed_aspect_ratio.sample) }
+
+      it { is_expected_to_match_for(klass) }
+    end
+
+    describe 'when provided with something that is not a aspect_ratio' do
+      subject { matcher.allowing(not_valid_aspect_ratio) }
+
+      let(:not_valid_aspect_ratio) { 'not_valid' }
+
+      it { is_expected_not_to_match_for(klass) }
     end
   end
 

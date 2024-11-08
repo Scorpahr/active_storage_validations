@@ -108,13 +108,19 @@ module ActiveStorageValidations
     def ensure_aspect_ratio_validity
       return true if options[:with]&.is_a?(Proc) || options[:in]&.is_a?(Proc)
 
-      unless NAMED_ASPECT_RATIOS.include?(options[:with]) || options[:with] || NAMED_ASPECT_RATIOS.include?(options[:in]) || options[:in] =~ ASPECT_RATIO_REGEX
-        raise ArgumentError, <<~ERROR_MESSAGE
-          You must pass a valid aspect ratio to the validator
-          It should either be a named aspect ratio (#{NAMED_ASPECT_RATIOS.join(', ')})
-          Or an aspect ratio like 'is_16_9' (matching /#{ASPECT_RATIO_REGEX.source}/)
-        ERROR_MESSAGE
+      aspect_ratios = Array.wrap(options[:with] || options[:in])
+
+      unless aspect_ratios.all? { |option| NAMED_ASPECT_RATIOS.include?(option) || option =~ ASPECT_RATIO_REGEX }
+        raise ArgumentError, invalid_aspect_ratio_message
       end
+    end
+
+    def invalid_aspect_ratio_message
+      <<~ERROR_MESSAGE
+        You must pass a valid aspect ratio to the validator
+        It should either be a named aspect ratio (#{NAMED_ASPECT_RATIOS.join(', ')})
+        Or an aspect ratio like 'is_16_9' (matching /#{ASPECT_RATIO_REGEX.source}/)
+      ERROR_MESSAGE
     end
   end
 end

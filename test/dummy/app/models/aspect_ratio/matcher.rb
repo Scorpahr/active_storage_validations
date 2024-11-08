@@ -23,7 +23,7 @@ class AspectRatio::Matcher < ApplicationRecord
   has_one_attached :allowing_one_is_x_y
   validates :allowing_one_is_x_y, aspect_ratio: :is_16_9
   has_one_attached :allowing_several
-  validates :allowing_several, aspect_ratio: %i[square portrait]
+  validates :allowing_several, aspect_ratio: [:square, :portrait]
 
   has_one_attached :allow_blank
   validates :allow_blank, aspect_ratio: :square, allow_blank: true
